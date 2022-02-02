@@ -5,7 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
-default = []
+default = [ "bitflags" ]
 alloc = []
 std = [ "alloc", "err-derive/std" ]
 
@@ -13,6 +13,7 @@ std = [ "alloc", "err-derive/std" ]
 block_device = "0.1"
 err-derive = { version = "0.3", default_features = false }
 crc = { version = "^1.8", default_features = false }
+bitflags = { version = "1.3", optional = true }
 
 [dev-dependencies]
 nom = "6.1"

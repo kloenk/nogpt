@@ -129,11 +129,13 @@ where
         })
     }
 
-    pub fn get_partition<PT>(&self, idx: u32) -> Result<GptPartHeader<PT>>
+    pub fn get_partition<PT, PA>(&self, idx: u32) -> Result<GptPartHeader<PT, PA>>
     where
         PT: GptTypeGuid,
         GptError: From<<PT as TryFrom<[u8; 16]>>::Error>,
         GptError: From<<PT as TryInto<[u8; 16]>>::Error>,
+        PA: TryFrom<u64>,
+        GptError: From<<PA as TryFrom<u64>>::Error>,
     {
         if idx >= self.header.num_parts {
             return Err(GptError::NoGpt);

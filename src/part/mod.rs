@@ -3,9 +3,12 @@ use crate::{read_le_bytes, GptError, Result, GUID};
 use core::cmp;
 use core::convert::Infallible;
 
+mod attrs;
+pub use attrs::Attributes;
+
 //pub const ESP_GUID_TYPE: GUID = GUID::new()
 
-pub struct GptPartHeader<T = DefaultGptTypeGuid>
+pub struct GptPartHeader<T = DefaultGptTypeGuid, A = Attributes>
 where
     T: GptTypeGuid,
 {
@@ -24,7 +27,7 @@ where
 
     // TODO: attrs type
     /// Attribute bits, all bits reserved by `UEFI`
-    pub attrs: u64,
+    pub attrs: A,
 
     /// Null-terminated string containing a human-readable name of the partition.
     pub name: [u16; 36],
@@ -35,10 +38,12 @@ where
     // reserved
 }
 
-impl<T> GptPartHeader<T>
+impl<T, A> GptPartHeader<T, A>
 where
     T: GptTypeGuid,
     GptError: From<<T as TryFrom<[u8; 16]>>::Error>,
+    A: TryFrom<u64>,
+    GptError: From<<A as TryFrom<u64>>::Error>,
 {
     /// Parse gpt partition header.
     pub fn parse(buf: &[u8]) -> Result<Self> {
@@ -51,6 +56,7 @@ where
         let end_lba = read_le_bytes!(buf, u64, 40..48);
 
         let attrs = read_le_bytes!(buf, u64, 48..56);
+        let attrs = attrs.try_into()?;
 
         let name_in: [u8; 72] = read_le_bytes!(buf, 56..128);
         // TODO: some faster way?
@@ -82,9 +88,10 @@ where
     }
 }
 
-impl<T> core::fmt::Debug for GptPartHeader<T>
+impl<T, A> core::fmt::Debug for GptPartHeader<T, A>
 where
     T: GptTypeGuid + core::fmt::Debug,
+    A: core::fmt::Debug,
 {
     #[cfg(feature = "alloc")]
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

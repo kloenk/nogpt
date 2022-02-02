@@ -21,6 +21,7 @@ impl GUID {
         }
     }
 
+    /// Convert guid to byte representation
     pub fn as_bytes(&self) -> [u8; 16] {
         let mut ret = [0u8; 16];
         let mut i = 0;
@@ -45,8 +46,11 @@ impl GUID {
         ret
     }
 
+    /// Unused Entry.
     pub const UNUSED: Self = Self::new(0, 0, 0, 0);
+    /// EFI System Partition.
     pub const ESP: Self = Self::new(0xC12A7328, 0xF81F, 0x11D2, 0xBA4B00A0C93EC93B);
+    /// Partition containing a legacy MBR
     pub const LEGACY_MBR: Self = Self::new(0x024DEE41, 0x33E7, 0x11D3, 0x9D690008C781F39F);
 }
 

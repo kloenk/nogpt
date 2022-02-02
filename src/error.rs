@@ -35,6 +35,12 @@ pub enum GptError {
     )]
     PartitionTableToShort(u32),
 
+    #[error(display = "Invalid data")]
+    InvalidData,
+
+    #[error(display = "Data not long enough")]
+    UnexpectedEOF,
+
     #[error(display = "No gpt table could be found")]
     NoGpt,
 }
