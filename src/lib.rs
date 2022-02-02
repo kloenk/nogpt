@@ -36,10 +36,12 @@ pub(crate) use read_le_bytes; // trick to export to crate
 pub mod error;
 mod guid;
 pub mod header;
+pub mod mbr;
 pub mod part;
 #[cfg(any(feature = "std", test, doc))]
 pub mod std;
 
+use crate::mbr::{MBRPartitionRecord, MasterBootRecord};
 pub use guid::GUID;
 
 pub struct Gpt<T> {
@@ -65,7 +67,20 @@ where
         };
 
         // TODO: read address from MBR
-        let header_lba = 1;
+        block.read(&mut buf, 0, 1)?;
+        let mbr = unsafe { MasterBootRecord::from_buf(&buf) }?;
+
+        mbr.verify(None)?;
+        if mbr.partition[0].os_indicator != MBRPartitionRecord::GPT_PROTECTIVE_OS_TYPE {
+            // This is not a protective MBR, but a possible a MBR with one or more GPT partitions.
+            // Bailing out
+            return Err(GptError::NoGpt.into());
+        }
+
+        let header_lba = mbr.partition[0].starting_lba() as usize;
+
+        // mbr has to be clean up, before buf is used again, as mbr points into buf.
+        drop(mbr);
         block.read(&mut buf, header_lba, 1)?;
 
         let m_header = GptHeader::parse(&buf)?;

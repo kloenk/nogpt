@@ -1,7 +1,7 @@
 use crate::GptError;
 use core::fmt::Debug;
 
-#[repr(packed)]
+#[repr(C, packed)]
 #[derive(Eq, PartialEq, Clone, Copy)]
 pub struct GUID {
     data1: u32,

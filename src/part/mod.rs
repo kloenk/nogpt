@@ -25,7 +25,6 @@ where
     ///Ending LBA of the partition defined by this entry.
     pub end_lba: u64,
 
-    // TODO: attrs type
     /// Attribute bits, all bits reserved by `UEFI`
     pub attrs: A,
 

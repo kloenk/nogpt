@@ -31,7 +31,7 @@ impl BlockDevice for BlockFile {
         &self,
         buf: &mut [u8],
         address: usize,
-        number_of_blocks: usize,
+        _number_of_blocks: usize,
     ) -> Result<(), Self::Error> {
         #[cfg(target_family = "unix")]
         let read = self
@@ -52,7 +52,7 @@ impl BlockDevice for BlockFile {
         &self,
         buf: &[u8],
         address: usize,
-        number_of_blocks: usize,
+        _number_of_blocks: usize,
     ) -> Result<(), Self::Error> {
         #[cfg(target_family = "unix")]
         let write = self

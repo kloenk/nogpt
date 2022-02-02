@@ -43,6 +43,9 @@ pub enum GptError {
 
     #[error(display = "No gpt table could be found")]
     NoGpt,
+
+    #[error(display = "MBR partition is not valid")]
+    InvalidMbr,
 }
 
 impl From<Infallible> for GptError {
