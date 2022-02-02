@@ -1,26 +1,37 @@
 use crate::DefaultGptTypeGuid::Unknown;
 use crate::{read_le_bytes, GptError, Result, GUID};
 use core::cmp;
-use std::convert::Infallible;
+use core::convert::Infallible;
 
 //pub const ESP_GUID_TYPE: GUID = GUID::new()
 
 pub struct GptPartHeader<T = DefaultGptTypeGuid>
 where
     T: GptTypeGuid,
-    GptError: From<<T as TryFrom<[u8; 16]>>::Error>,
-    GptError: From<<T as TryInto<[u8; 16]>>::Error>,
 {
+    /// Unique ID that defines the purpose and type of this Partition.
+    /// A value of zero defines that this partition entry is not being used.
     pub type_guid: T,
+    /// GUID that is unique for every partition entry.
+    /// Every partition ever created will have a unique GUID.
+    /// This GUID must be assigned when the GPT Partition Entry is created.
     pub guid: GUID,
 
+    /// Starting LBA of the partition defined by this entry.
     pub start_lba: u64,
+    ///Ending LBA of the partition defined by this entry.
     pub end_lba: u64,
 
     // TODO: attrs type
+    /// Attribute bits, all bits reserved by `UEFI`
     pub attrs: u64,
 
+    /// Null-terminated string containing a human-readable name of the partition.
     pub name: [u16; 36],
+
+    /// String representation of name.
+    #[cfg(feature = "alloc")]
+    pub name_str: alloc::string::String,
     // reserved
 }
 
@@ -28,8 +39,8 @@ impl<T> GptPartHeader<T>
 where
     T: GptTypeGuid,
     GptError: From<<T as TryFrom<[u8; 16]>>::Error>,
-    GptError: From<<T as TryInto<[u8; 16]>>::Error>,
 {
+    /// Parse gpt partition header.
     pub fn parse(buf: &[u8]) -> Result<Self> {
         let type_guid: [u8; 16] = read_le_bytes!(buf, 0..16);
         let type_guid: T = type_guid.try_into()?;
@@ -48,6 +59,12 @@ where
             name[x] = u16::from_le_bytes([name_in[x * 2], name_in[x * 2 + 1]]);
         }
 
+        #[cfg(feature = "alloc")]
+        let name_str = {
+            let len = (0..36).take_while(|&i| name[i] != 0).count();
+            alloc::string::String::from_utf16_lossy(&name[..len])
+        };
+
         Ok(Self {
             type_guid,
             guid,
@@ -58,6 +75,9 @@ where
             attrs,
 
             name,
+
+            #[cfg(feature = "alloc")]
+            name_str,
         })
     }
 }
@@ -65,21 +85,16 @@ where
 impl<T> core::fmt::Debug for GptPartHeader<T>
 where
     T: GptTypeGuid + core::fmt::Debug,
-    GptError: From<<T as TryFrom<[u8; 16]>>::Error>,
-    GptError: From<<T as TryInto<[u8; 16]>>::Error>,
 {
     #[cfg(feature = "alloc")]
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let len = (0..36).take_while(|&i| self.name[i] != 0).count();
-        let name = alloc::string::String::from_utf16_lossy(&self.name[..len]);
-
         fmt.debug_struct("GptPartHeader")
             .field("type_guid", &self.type_guid)
             .field("guid", &self.guid)
             .field("start_lba", &self.start_lba)
             .field("end_lba", &self.end_lba)
             .field("attrs", &self.attrs)
-            .field("name", &name)
+            .field("name", &self.name_str)
             .finish()
     }
 
@@ -106,8 +121,11 @@ pub trait GptTypeGuid: TryFrom<[u8; 16]> + TryInto<[u8; 16]> {
 
 #[derive(Debug)]
 pub enum DefaultGptTypeGuid {
+    /// Unused Entry.
     Unused,
+    /// EFI System Partition.
     ESP,
+    /// Partition containing a legacy MBR
     LegacyMBR,
     Unknown(GUID),
 }

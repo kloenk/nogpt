@@ -1,6 +1,6 @@
 use crate::header::GptHeaderType;
 use crate::Gpt;
-use std::convert::Infallible;
+use core::convert::Infallible;
 
 #[derive(err_derive::Error, Debug)]
 pub enum GptError {
@@ -98,4 +98,16 @@ impl<T: Sized> GptRepair<T> for Result<Gpt<T>, GptParseError<T>> {
             Err(GptParseError::BrokenHeader(_, _, e)) => Err(e),
         }
     }
+}
+
+#[derive(err_derive::Error, Debug)]
+pub enum ParseGuidError {
+    #[error(display = "Failed to parse block: {}", _0)]
+    ParseIntError(#[source] core::num::ParseIntError),
+
+    #[error(display = "Invalid GUID Length")]
+    InvalidLength,
+
+    #[error(display = "Invalid GUID Separator")]
+    InvalidSeparator,
 }
