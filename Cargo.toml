@@ -12,6 +12,7 @@ std = [ "alloc", "err-derive/std" ]
 [dependencies]
 block_device = "0.1"
 err-derive = { version = "0.3", default_features = false }
+crc = { version = "^1.8", default_features = false }
 
-nom = "6.1"
 [dev-dependencies]
+nom = "6.1"
