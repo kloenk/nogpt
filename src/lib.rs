@@ -11,8 +11,8 @@ extern crate core;
 
 use block_device::BlockDevice;
 
-pub use crate::error::{GptError, GptParseError, GptRepair, Result};
-use crate::header::{GptHeader, GptHeaderType};
+pub use crate::error::{GPTError, GPTParseError, GptRepair, Result};
+use crate::header::{GPTHeader, GptHeaderType};
 
 pub const BLOCK_SIZE: u32 = 512;
 //pub const BLOCK_SIZE: u32 = 4096;
@@ -30,7 +30,7 @@ macro_rules! read_le_bytes {
     };
 }
 use crate::error::ParseGuidError;
-use crate::part::{DefaultGptTypeGuid, GptPartHeader, GptTypeGuid};
+use crate::part::{DefaultGPTTypeGuid, GPTPartHeader, GPTTypeGuid};
 pub(crate) use read_le_bytes; // trick to export to crate
 
 pub mod error;
@@ -44,17 +44,17 @@ pub mod std;
 use crate::mbr::{MBRPartitionRecord, MasterBootRecord};
 pub use guid::GUID;
 
-pub struct Gpt<T> {
+pub struct GPT<T> {
     block: T,
-    header: GptHeader,
+    header: GPTHeader,
 }
 
-impl<T> Gpt<T>
+impl<T> GPT<T>
 where
     T: BlockDevice,
-    GptError: From<T::Error>,
+    GPTError: From<T::Error>,
 {
-    pub fn open(block: T) -> Result<Self, GptParseError<T>> {
+    pub fn open(block: T) -> Result<Self, GPTParseError<T>> {
         #[cfg(not(feature = "alloc"))]
         let mut buf = [0u8; DEFAULT_PARTTABLE_SIZE as usize];
 
@@ -74,7 +74,7 @@ where
         if mbr.partition[0].os_indicator != MBRPartitionRecord::GPT_PROTECTIVE_OS_TYPE {
             // This is not a protective MBR, but a possible a MBR with one or more GPT partitions.
             // Bailing out
-            return Err(GptError::NoGpt.into());
+            return Err(GPTError::NoGPT.into());
         }
 
         let header_lba = mbr.partition[0].starting_lba() as usize;
@@ -83,12 +83,12 @@ where
         drop(mbr);
         block.read(&mut buf, header_lba, 1)?;
 
-        let m_header = GptHeader::parse(&buf)?;
+        let m_header = GPTHeader::parse(&buf)?;
 
         let p_table_size = m_header.size_of_p_entry * m_header.num_parts;
         #[cfg(not(feature = "alloc"))]
         if p_table_size > DEFAULT_PARTTABLE_SIZE {
-            return Err(GptError::NoAllocator.into());
+            return Err(GPTError::NoAllocator.into());
         }
 
         #[cfg(feature = "alloc")]
@@ -108,7 +108,7 @@ where
         let m_header_valid = m_header.validate(header_lba as u64, &buf);
 
         block.read(&mut buf, m_header.other_lba as usize, 1)?;
-        let b_header = GptHeader::parse(&buf)?;
+        let b_header = GPTHeader::parse(&buf)?;
 
         block.read(&mut buf, b_header.p_entry_lba as usize, blocks as usize)?;
 
@@ -116,7 +116,7 @@ where
 
         if m_header_valid.is_err() || b_header_valid.is_err() {
             if m_header_valid.is_ok() {
-                return Err(GptParseError::BrokenHeader(
+                return Err(GPTParseError::BrokenHeader(
                     Self {
                         block,
                         header: m_header,
@@ -125,7 +125,7 @@ where
                     b_header_valid.unwrap_err(),
                 ));
             } else if b_header_valid.is_ok() {
-                return Err(GptParseError::BrokenHeader(
+                return Err(GPTParseError::BrokenHeader(
                     Self {
                         block,
                         header: b_header,
@@ -134,7 +134,7 @@ where
                     m_header_valid.unwrap_err(),
                 ));
             } else {
-                return Err(GptError::NoGpt.into());
+                return Err(GPTError::NoGPT.into());
             }
         }
 
@@ -144,16 +144,16 @@ where
         })
     }
 
-    pub fn get_partition<PT, PA>(&self, idx: u32) -> Result<GptPartHeader<PT, PA>>
+    pub fn get_partition<PT, PA>(&self, idx: u32) -> Result<GPTPartHeader<PT, PA>>
     where
-        PT: GptTypeGuid,
-        GptError: From<<PT as TryFrom<[u8; 16]>>::Error>,
-        GptError: From<<PT as TryInto<[u8; 16]>>::Error>,
+        PT: GPTTypeGuid,
+        GPTError: From<<PT as TryFrom<[u8; 16]>>::Error>,
+        GPTError: From<<PT as TryInto<[u8; 16]>>::Error>,
         PA: TryFrom<u64>,
-        GptError: From<<PA as TryFrom<u64>>::Error>,
+        GPTError: From<<PA as TryFrom<u64>>::Error>,
     {
         if idx >= self.header.num_parts {
-            return Err(GptError::NoGpt);
+            return Err(GPTError::NoGPT);
         }
 
         #[cfg(not(feature = "alloc"))]
@@ -170,7 +170,7 @@ where
         let p_table_size = self.header.size_of_p_entry * self.header.num_parts;
         #[cfg(not(feature = "alloc"))]
         if p_table_size > DEFAULT_PARTTABLE_SIZE {
-            return Err(GptError::NoAllocator.into());
+            return Err(GPTError::NoAllocator.into());
         }
 
         #[cfg(feature = "alloc")]
@@ -190,6 +190,6 @@ where
 
         let offset: u64 = self.header.size_of_p_entry as u64 * idx as u64;
 
-        GptPartHeader::parse(&buf[offset as usize..])
+        GPTPartHeader::parse(&buf[offset as usize..])
     }
 }

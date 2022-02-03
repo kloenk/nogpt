@@ -1,19 +1,19 @@
 use block_device::BlockDevice;
 use nogpt::mbr::MasterBootRecord;
-use nogpt::part::GptPartHeader;
-use nogpt::{GptError, GptRepair};
+use nogpt::part::GPTPartHeader;
+use nogpt::{GPTError, GptRepair};
 
 #[cfg(feature = "std")]
 use nogpt::std::BlockFile;
 
 #[cfg(feature = "std")]
 #[test]
-fn file() -> Result<(), GptError> {
+fn file() -> Result<(), GPTError> {
     let block = open_512_file()?;
 
-    let gpt = nogpt::Gpt::open(block).fail()?;
+    let gpt = nogpt::GPT::open(block).fail()?;
 
-    let part: GptPartHeader = gpt.get_partition(0)?;
+    let part: GPTPartHeader = gpt.get_partition(0)?;
 
     println!("part[0]: {:?}", part);
 
@@ -22,7 +22,7 @@ fn file() -> Result<(), GptError> {
 
 #[cfg(feature = "std")]
 #[test]
-fn read_mbr() -> Result<(), GptError> {
+fn read_mbr() -> Result<(), GPTError> {
     let block = open_512_file()?;
 
     let mut buf = [0u8; 512];
@@ -47,7 +47,7 @@ fn read_mbr() -> Result<(), GptError> {
 }
 
 #[cfg(feature = "std")]
-fn open_512_file() -> Result<BlockFile, GptError> {
+fn open_512_file() -> Result<BlockFile, GPTError> {
     Ok(nogpt::std::BlockFile::open(
         &"tests/fixtures/gpt-linux-disk-01.img",
     )?)

@@ -1,5 +1,5 @@
-use crate::DefaultGptTypeGuid::Unknown;
-use crate::{read_le_bytes, GptError, Result, GUID};
+use crate::DefaultGPTTypeGuid::Unknown;
+use crate::{read_le_bytes, GPTError, Result, GUID};
 use core::cmp;
 use core::convert::Infallible;
 
@@ -8,9 +8,9 @@ pub use attrs::Attributes;
 
 //pub const ESP_GUID_TYPE: GUID = GUID::new()
 
-pub struct GptPartHeader<T = DefaultGptTypeGuid, A = Attributes>
+pub struct GPTPartHeader<T = DefaultGPTTypeGuid, A = Attributes>
 where
-    T: GptTypeGuid,
+    T: GPTTypeGuid,
 {
     /// Unique ID that defines the purpose and type of this Partition.
     /// A value of zero defines that this partition entry is not being used.
@@ -37,12 +37,12 @@ where
     // reserved
 }
 
-impl<T, A> GptPartHeader<T, A>
+impl<T, A> GPTPartHeader<T, A>
 where
-    T: GptTypeGuid,
-    GptError: From<<T as TryFrom<[u8; 16]>>::Error>,
+    T: GPTTypeGuid,
+    GPTError: From<<T as TryFrom<[u8; 16]>>::Error>,
     A: TryFrom<u64>,
-    GptError: From<<A as TryFrom<u64>>::Error>,
+    GPTError: From<<A as TryFrom<u64>>::Error>,
 {
     /// Parse gpt partition header.
     pub fn parse(buf: &[u8]) -> Result<Self> {
@@ -87,9 +87,9 @@ where
     }
 }
 
-impl<T, A> core::fmt::Debug for GptPartHeader<T, A>
+impl<T, A> core::fmt::Debug for GPTPartHeader<T, A>
 where
-    T: GptTypeGuid + core::fmt::Debug,
+    T: GPTTypeGuid + core::fmt::Debug,
     A: core::fmt::Debug,
 {
     #[cfg(feature = "alloc")]
@@ -119,14 +119,14 @@ where
     }
 }
 
-pub trait GptTypeGuid: TryFrom<[u8; 16]> + TryInto<[u8; 16]> {
+pub trait GPTTypeGuid: TryFrom<[u8; 16]> + TryInto<[u8; 16]> {
     // TODO: add provided function to convert to guid values pretty printed string
 }
 
 // TODO: somehow pack to same size as GUID
 
 #[derive(Debug)]
-pub enum DefaultGptTypeGuid {
+pub enum DefaultGPTTypeGuid {
     /// Unused Entry.
     Unused,
     /// EFI System Partition.
@@ -136,32 +136,32 @@ pub enum DefaultGptTypeGuid {
     Unknown(GUID),
 }
 
-impl TryFrom<[u8; 16]> for DefaultGptTypeGuid {
+impl TryFrom<[u8; 16]> for DefaultGPTTypeGuid {
     type Error = Infallible;
 
     fn try_from(value: [u8; 16]) -> core::result::Result<Self, Self::Error> {
         let value = GUID::from(value);
         Ok(match value {
-            GUID::UNUSED => DefaultGptTypeGuid::Unused,
-            GUID::ESP => DefaultGptTypeGuid::ESP,
-            GUID::LEGACY_MBR => DefaultGptTypeGuid::LegacyMBR,
-            v => DefaultGptTypeGuid::Unknown(v),
+            GUID::UNUSED => DefaultGPTTypeGuid::Unused,
+            GUID::ESP => DefaultGPTTypeGuid::ESP,
+            GUID::LEGACY_MBR => DefaultGPTTypeGuid::LegacyMBR,
+            v => DefaultGPTTypeGuid::Unknown(v),
         })
     }
 }
 
-impl TryInto<[u8; 16]> for DefaultGptTypeGuid {
-    type Error = GptError;
+impl TryInto<[u8; 16]> for DefaultGPTTypeGuid {
+    type Error = GPTError;
 
     fn try_into(self) -> core::result::Result<[u8; 16], Self::Error> {
         Ok(match self {
-            DefaultGptTypeGuid::Unused => GUID::ESP.into(),
-            DefaultGptTypeGuid::ESP => GUID::ESP.into(),
-            DefaultGptTypeGuid::LegacyMBR => GUID::LEGACY_MBR.into(),
-            DefaultGptTypeGuid::Unknown(v) => v.into(),
+            DefaultGPTTypeGuid::Unused => GUID::ESP.into(),
+            DefaultGPTTypeGuid::ESP => GUID::ESP.into(),
+            DefaultGPTTypeGuid::LegacyMBR => GUID::LEGACY_MBR.into(),
+            DefaultGPTTypeGuid::Unknown(v) => v.into(),
         })
     }
 }
 
-impl GptTypeGuid for DefaultGptTypeGuid {}
-impl GptTypeGuid for GUID {}
+impl GPTTypeGuid for DefaultGPTTypeGuid {}
+impl GPTTypeGuid for GUID {}

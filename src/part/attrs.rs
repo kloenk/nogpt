@@ -1,4 +1,4 @@
-use crate::GptError;
+use crate::GPTError;
 
 #[cfg(feature = "bitflags")]
 bitflags::bitflags! {
@@ -42,10 +42,10 @@ impl Attributes {
 
 #[cfg(feature = "bitflags")]
 impl TryFrom<u64> for Attributes {
-    type Error = GptError;
+    type Error = GPTError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        return Attributes::from_bits(value).ok_or(GptError::InvalidData);
+        return Attributes::from_bits(value).ok_or(GPTError::InvalidData);
     }
 }
 

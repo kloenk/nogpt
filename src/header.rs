@@ -1,13 +1,13 @@
 use block_device::BlockDevice;
 use crc::{crc32, Hasher32};
 
-use crate::{read_le_bytes, GptError, Result, GUID};
+use crate::{read_le_bytes, GPTError, Result, GUID};
 
 const EFI_SIGNATURE: u64 = 0x5452415020494645;
 const GPT_REV: u32 = 0x00010000;
 
 #[derive(Debug)]
-pub struct GptHeader {
+pub struct GPTHeader {
     /// Size in bytes of the GPT Header. The [`Self::size`] must be greater than or equal to
     /// 92 and must be less than or equal to the logical block size.
     pub size: u32,
@@ -45,18 +45,18 @@ pub struct GptHeader {
     pub p_crc32: u32,
 }
 
-impl GptHeader {
+impl GPTHeader {
     /// Read the GPT header from buf and serializes it into this struct.
     /// Checks for `Signature` and `Revision`, but nothing else.
     pub fn parse(buf: &[u8]) -> Result<Self> {
         let sig = read_le_bytes!(buf, u64, 0..8);
         if sig != EFI_SIGNATURE {
-            return Err(GptError::InvalidSignature(sig));
+            return Err(GPTError::InvalidSignature(sig));
         }
 
         let rev = read_le_bytes!(buf, u32, 8..12);
         if rev != GPT_REV {
-            return Err(GptError::InvalidSignature(rev as u64));
+            return Err(GPTError::InvalidSignature(rev as u64));
         }
 
         let size = read_le_bytes!(buf, u32, 12..16);
@@ -99,7 +99,7 @@ impl GptHeader {
     /// Check this header for valid data. needs the bits of the partition table as input.
     pub fn validate(&self, my_lba: u64, part_table: &[u8]) -> Result<()> {
         if self.my_lba != my_lba {
-            return Err(GptError::InvalidLba(self.my_lba));
+            return Err(GPTError::InvalidLba(self.my_lba));
         }
         self.validate_crc()?;
         self.validate_part_crc(part_table)?;
@@ -110,7 +110,7 @@ impl GptHeader {
     pub fn validate_part_crc(&self, part_table: &[u8]) -> Result<()> {
         let len = (self.num_parts * self.size_of_p_entry) as usize;
         if len > part_table.len() {
-            return Err(GptError::PartitionTableToShort(len as u32));
+            return Err(GPTError::PartitionTableToShort(len as u32));
         }
 
         let mut digest = crc32::Digest::new(crc32::IEEE);
@@ -118,7 +118,7 @@ impl GptHeader {
 
         let digest = digest.sum32();
         if digest != self.p_crc32 {
-            return Err(GptError::InvalidCrcParts(digest, self.p_crc32));
+            return Err(GPTError::InvalidCrcParts(digest, self.p_crc32));
         }
 
         Ok(())
@@ -128,7 +128,7 @@ impl GptHeader {
     pub fn validate_crc(&self) -> Result<()> {
         let crc_cal = self.calculate_crc();
         if crc_cal != self.crc32 {
-            return Err(GptError::InvalidCrcHeader(crc_cal, self.crc32));
+            return Err(GPTError::InvalidCrcHeader(crc_cal, self.crc32));
         }
 
         Ok(())

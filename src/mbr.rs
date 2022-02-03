@@ -1,4 +1,4 @@
-use crate::{GptError, Result};
+use crate::{GPTError, Result};
 
 #[derive(Copy, Clone, Debug)]
 #[repr(C, packed)]
@@ -34,7 +34,7 @@ impl MBRPartitionRecord {
         u32::from_le_bytes(self.size_in_lba)
     }
 
-    /// Helper to calculate [`Self::startling_lba`] + [`Self::size_in_lba`] to get the ending lba.
+    /// Helper to calculate [`Self::starting_lba`] + [`Self::size_in_lba`] to get the ending lba.
     pub fn ending_lba(&self) -> u32 {
         self.starting_lba() + self.size_in_lba()
     }
@@ -55,7 +55,7 @@ pub struct MasterBootRecord {
     /// the system. This value is always written by the OS and is never written by EFI firmware.
     pub unique_mbr_signature: [u8; 4],
     /// Unknown. This field shall not be used by UEFI firmware.
-    unknown: [u8; 2],
+    pub unknown: [u8; 2],
     /// Array of four legacy MBR partition records [`MBRPartitionRecord`].
     pub partition: [MBRPartitionRecord; 4],
     pub signature: [u8; 2],
@@ -72,7 +72,7 @@ impl MasterBootRecord {
     ///
     pub unsafe fn from_buf(buf: &[u8]) -> Result<Self> {
         if buf.len() < core::mem::size_of::<Self>() {
-            return Err(GptError::UnexpectedEOF);
+            return Err(GPTError::UnexpectedEOF);
         }
 
         let mut ret: MasterBootRecord = unsafe { core::ptr::read(buf.as_ptr() as _) };
@@ -86,7 +86,7 @@ impl MasterBootRecord {
 
     pub fn verify(&self, last_lba: Option<u32>) -> Result<()> {
         if self.signature() != 0xaa55 {
-            return Err(GptError::InvalidData);
+            return Err(GPTError::InvalidData);
         }
 
         self.verify_partitions(last_lba)?;
@@ -100,13 +100,39 @@ impl MasterBootRecord {
             || !self.partition[2].is_empty()
             || !self.partition[3].is_empty()
         {
-            return Err(GptError::InvalidData);
+            return Err(GPTError::InvalidMbr);
         }
+        /*(0..=2)
+        .fold([0u8, 1, 2, 3], |order, left| {
+            (left + 1..=3).fold(order, |mut order, right| {
+                let swap = |mut this: [u8; 4], left, right| {
+                    this.swap(left, right);
+                    this
+                };
+                if self.partition[left].starting_lba() > self.partition[right].starting_lba() {
+                    swap(order, left, right)
+                } else {
+                    order
+                }
+            })
+        })
+        .iter()
+        .take(3)
+        .try_for_each(|index| {
+            let index = *index as usize;
+            let left = self.partition[index];
+            let right = self.partition[index + 1];
+            if left.is_empty() || right.is_empty() || left.ending_lba() < right.starting_lba() {
+                Ok(())
+            } else {
+                Err(GptError::OverlappingPartitions)
+            }
+        });*/
 
         let last_lba_p = self.partition[0].ending_lba();
         if let Some(last_lba) = last_lba {
             if last_lba_p > last_lba {
-                return Err(GptError::InvalidMbr);
+                return Err(GPTError::InvalidMbr);
             }
         }
 

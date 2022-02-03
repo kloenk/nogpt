@@ -1,4 +1,4 @@
-use crate::GptError;
+use crate::GPTError;
 use core::fmt::Debug;
 
 #[repr(C, packed)]
@@ -55,14 +55,14 @@ impl GUID {
 }
 
 impl TryFrom<&[u8]> for GUID {
-    type Error = GptError;
+    type Error = GPTError;
 
     fn try_from(value: &[u8]) -> core::result::Result<Self, Self::Error> {
         let v: [u8; 16] = value
             .get(0..16)
-            .ok_or(GptError::NoGpt)?
+            .ok_or(GPTError::NoGPT)?
             .try_into()
-            .map_err(|_| GptError::NoGpt)?;
+            .map_err(|_| GPTError::NoGPT)?;
 
         Ok(Self::from(v))
     }
