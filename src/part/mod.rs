@@ -32,7 +32,7 @@ where
     pub name: [u16; 36],
 
     /// String representation of name.
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "alloc", doc))]
     pub name_str: alloc::string::String,
     // reserved
 }
