@@ -1,10 +1,16 @@
 [package]
 name = "nogpt"
+authors = [ "Finn Behrens <me@kloenk.dev>" ]
 version = "0.1.0-pre1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/kloenk/nogpt"
+homepage = "https://github.com/kloenk/nogpt"
+documentation = "https://docs.rs/nogpt"
 readme = "README.md"
+description = "Rust GUID Partition Table (GPT) parsing library with `#[no_std]` support."
+keywords = [ "linux", "disk", "block" ]
+categories = [ "hardware-support", "no-std", "parsing" ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
