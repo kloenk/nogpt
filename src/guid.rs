@@ -1,5 +1,4 @@
 use crate::GPTError;
-use core::fmt::Debug;
 
 #[repr(C, packed)]
 #[derive(Eq, PartialEq, Clone, Copy)]

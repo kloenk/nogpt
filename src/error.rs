@@ -1,4 +1,3 @@
-use crate::header::GptHeaderType;
 use crate::GPT;
 use core::convert::Infallible;
 

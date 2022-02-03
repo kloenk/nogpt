@@ -1,6 +1,6 @@
 use crate::BLOCK_SIZE;
 use std::fs::File;
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 use std::path::Path;
 
 #[cfg(target_family = "windows")]
@@ -34,8 +34,7 @@ impl BlockDevice for BlockFile {
         _number_of_blocks: usize,
     ) -> Result<(), Self::Error> {
         #[cfg(target_family = "unix")]
-        let read = self
-            .inner
+        self.inner
             .read_at(buf, BLOCK_SIZE as u64 * address as u64)?;
 
         #[cfg(target_family = "windows")]
@@ -55,8 +54,7 @@ impl BlockDevice for BlockFile {
         _number_of_blocks: usize,
     ) -> Result<(), Self::Error> {
         #[cfg(target_family = "unix")]
-        let write = self
-            .inner
+        self.inner
             .write_at(buf, BLOCK_SIZE as u64 * address as u64)?;
 
         #[cfg(target_family = "windows")]

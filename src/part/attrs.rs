@@ -1,3 +1,4 @@
+#[cfg(any(feature = "bitflags"))]
 use crate::GPTError;
 
 #[cfg(any(feature = "bitflags"))]

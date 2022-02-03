@@ -1,7 +1,4 @@
-use crate::DefaultGPTTypeGuid::Unknown;
 use crate::{read_le_bytes, GPTError, Result, GUID};
-use core::cmp;
-use core::convert::Infallible;
 
 mod attrs;
 pub use attrs::Attributes;
@@ -177,7 +174,7 @@ impl GPTTypeGuid for GUID {}
 
 #[cfg(test)]
 mod test {
-    use crate::{DefaultGPTTypeGuid, GUID};
+    use super::{DefaultGPTTypeGuid, GUID};
 
     #[test]
     fn eq_guid_default_partition_type() {

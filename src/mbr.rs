@@ -75,7 +75,7 @@ impl MasterBootRecord {
             return Err(GPTError::UnexpectedEOF);
         }
 
-        let mut ret: MasterBootRecord = unsafe { core::ptr::read(buf.as_ptr() as _) };
+        let ret: MasterBootRecord = unsafe { core::ptr::read(buf.as_ptr() as _) };
         Ok(ret)
     }
 
