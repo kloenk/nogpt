@@ -1,4 +1,3 @@
-use block_device::BlockDevice;
 use crc::{crc32, Hasher32};
 
 use crate::{read_le_bytes, GPTError, Result, GUID};

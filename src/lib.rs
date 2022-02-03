@@ -40,9 +40,8 @@ pub mod part;
 #[cfg(any(feature = "std", doc))]
 pub mod std;
 
-use crate::error::ParseGuidError;
 use crate::mbr::{MBRPartitionRecord, MasterBootRecord};
-use crate::part::{DefaultGPTTypeGuid, GPTPartHeader, GPTTypeGuid};
+use crate::part::{GPTPartHeader, GPTTypeGuid};
 
 #[doc(inline)]
 pub use guid::GUID;
