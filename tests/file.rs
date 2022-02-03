@@ -1,6 +1,10 @@
+#[cfg(feature = "std")]
 use block_device::BlockDevice;
+#[cfg(feature = "std")]
 use nogpt::mbr::MasterBootRecord;
+#[cfg(feature = "std")]
 use nogpt::part::{DefaultGPTTypeGuid, GPTPartHeader};
+#[cfg(feature = "std")]
 use nogpt::{GPTError, GptRepair};
 
 #[cfg(feature = "std")]

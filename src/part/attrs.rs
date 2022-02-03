@@ -46,7 +46,7 @@ impl TryFrom<u64> for Attributes {
     type Error = GPTError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        return Attributes::from_bits(value).ok_or(GPTError::InvalidData);
+        Attributes::from_bits(value).ok_or(GPTError::InvalidData)
     }
 }
 
@@ -57,8 +57,8 @@ impl From<u64> for Attributes {
     }
 }
 
-impl Into<u64> for Attributes {
-    fn into(self) -> u64 {
-        self.bits()
+impl From<Attributes> for u64 {
+    fn from(attr: Attributes) -> u64 {
+        attr.bits()
     }
 }

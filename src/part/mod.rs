@@ -140,16 +140,16 @@ impl From<[u8; 16]> for DefaultGPTTypeGuid {
     }
 }
 
-impl Into<[u8; 16]> for DefaultGPTTypeGuid {
-    fn into(self) -> [u8; 16] {
-        let guid: GUID = self.into();
+impl From<DefaultGPTTypeGuid> for [u8; 16] {
+    fn from(t: DefaultGPTTypeGuid) -> Self {
+        let guid: GUID = t.into();
         guid.into()
     }
 }
 
-impl Into<GUID> for DefaultGPTTypeGuid {
-    fn into(self) -> GUID {
-        match self {
+impl From<DefaultGPTTypeGuid> for GUID {
+    fn from(t: DefaultGPTTypeGuid) -> Self {
+        match t {
             DefaultGPTTypeGuid::Unused => GUID::UNUSED,
             DefaultGPTTypeGuid::ESP => GUID::ESP,
             DefaultGPTTypeGuid::LegacyMBR => GUID::LEGACY_MBR,

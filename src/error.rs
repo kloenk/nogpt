@@ -65,6 +65,16 @@ pub enum GPTParseError<T: Sized> {
     BrokenHeader(crate::GPT<T>, crate::header::GptHeaderType, GPTError),
 }
 
+// This creates a redundant implementation, requires unstable feature specialization
+/*impl<T: Sized> From<GPTParseError<T>> for GPTError {
+    fn from(error: GPTParseError<T>) -> Self {
+        match error {
+            GPTParseError::Error(e) => e,
+            GPTParseError::BrokenHeader(_, _, e) => e,
+        }
+    }
+}*/
+
 impl<E, T> From<E> for GPTParseError<T>
 where
     GPTError: From<E>,
@@ -80,15 +90,6 @@ impl<T: Sized> core::fmt::Debug for GPTParseError<T> {
         match self {
             GPTParseError::Error(e) => core::fmt::Debug::fmt(e, f),
             GPTParseError::BrokenHeader(_, h, e) => write!(f, "GptParserError({:?}, {:?})", h, e),
-        }
-    }
-}
-
-impl<T: Sized> Into<GPTError> for GPTParseError<T> {
-    fn into(self) -> GPTError {
-        match self {
-            GPTParseError::Error(e) => e,
-            GPTParseError::BrokenHeader(_, _, e) => e,
         }
     }
 }
