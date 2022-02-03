@@ -36,7 +36,7 @@ pub struct GPTHeader {
     /// The size, in bytes, of each the GUID Partition Entry structures in the GUID Partition Entry
     /// array. This field shall be set to a value of 128 x 2n where n is an integer greater than or
     /// equal to zero (e.g., 128, 256, 512, etc.).
-    /// NOTE: Previous versions of this specification allowed any multiple of 8..
+    /// NOTE: Previous versions of this specification allowed any multiple of 8.
     pub size_of_p_entry: u32,
 
     /// The CRC32 of the GUID Partition Entry array. Starts at [`Self::p_entry_lba`] and is

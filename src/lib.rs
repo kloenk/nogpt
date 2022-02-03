@@ -56,6 +56,8 @@ where
     T: BlockDevice,
     GPTError: From<T::Error>,
 {
+    // This checks that the other header is okay, so cannot unwrap it in if header
+    #[allow(clippy::unnecessary_unwrap)]
     pub fn open(block: T) -> Result<Self, GPTParseError<T>> {
         #[cfg(not(feature = "alloc"))]
         let mut buf = [0u8; DEFAULT_PARTTABLE_SIZE as usize];
@@ -117,27 +119,27 @@ where
         let b_header_valid = b_header.validate(m_header.other_lba as u64, &buf);
 
         if m_header_valid.is_err() || b_header_valid.is_err() {
-            if m_header_valid.is_ok() {
-                return Err(GPTParseError::BrokenHeader(
+            return if m_header_valid.is_ok() {
+                Err(GPTParseError::BrokenHeader(
                     Self {
                         block,
                         header: m_header,
                     },
                     GptHeaderType::Backup,
                     b_header_valid.unwrap_err(),
-                ));
+                ))
             } else if b_header_valid.is_ok() {
-                return Err(GPTParseError::BrokenHeader(
+                Err(GPTParseError::BrokenHeader(
                     Self {
                         block,
                         header: b_header,
                     },
                     GptHeaderType::Main,
                     m_header_valid.unwrap_err(),
-                ));
+                ))
             } else {
-                return Err(GPTError::NoGPT.into());
-            }
+                Err(GPTError::NoGPT.into())
+            };
         }
 
         Ok(Self {

@@ -83,9 +83,9 @@ impl From<[u8; 16]> for GUID {
     }
 }
 
-impl Into<[u8; 16]> for GUID {
-    fn into(self) -> [u8; 16] {
-        self.as_bytes()
+impl From<GUID> for [u8; 16] {
+    fn from(value: GUID) -> Self {
+        value.as_bytes()
     }
 }
 
@@ -115,7 +115,7 @@ impl core::fmt::Display for GUID {
     }
 }
 
-const GUID_SEPARATOR: &'static str = "-";
+const GUID_SEPARATOR: &str = "-";
 
 impl core::str::FromStr for GUID {
     type Err = crate::error::ParseGuidError;
