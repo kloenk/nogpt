@@ -4,13 +4,13 @@ use core::convert::Infallible;
 
 #[derive(err_derive::Error, Debug)]
 pub enum GPTError {
-    #[cfg(any(feature = "std", test, doc))]
+    #[cfg(any(feature = "std", doc))]
     #[error(display = "io: {}", _0)]
     Io(#[source] std::io::Error),
 
-    #[cfg(feature = "alloc")]
+    #[cfg(any(feature = "alloc", doc))]
     #[error(display = "Failed to reserve memory")]
-    Alloc(#[source] alloc::collections::TryReserveError),
+    TryReserveError(#[source] alloc::collections::TryReserveError),
 
     #[error(display = "No allocator provided, cannot read bigger data")]
     NoAllocator,

@@ -1,10 +1,10 @@
 #![cfg_attr(not(any(feature = "std", test, doc)), no_std)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 extern crate alloc;
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", doc))]
 use alloc::vec::Vec;
 
 extern crate core;
@@ -37,7 +37,7 @@ pub mod error;
 pub mod header;
 pub mod mbr;
 pub mod part;
-#[cfg(any(feature = "std", test, doc))]
+#[cfg(any(feature = "std", doc))]
 pub mod std;
 
 use crate::error::ParseGuidError;

@@ -1,6 +1,6 @@
 use crate::GPTError;
 
-#[cfg(feature = "bitflags")]
+#[cfg(any(feature = "bitflags"))]
 bitflags::bitflags! {
     #[repr(transparent)]
     pub struct Attributes: u64 {
