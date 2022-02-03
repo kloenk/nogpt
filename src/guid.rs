@@ -228,4 +228,14 @@ mod test {
             [65, 238, 77, 2, 231, 51, 211, 17, 157, 105, 0, 8, 199, 129, 243, 159]
         );
     }
+
+    #[test]
+    fn test_eq() {
+        let lhs = GUID::ESP;
+        let rhs = "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
+            .parse::<GUID>()
+            .unwrap();
+
+        assert_eq!(lhs, rhs);
+    }
 }

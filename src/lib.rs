@@ -144,6 +144,24 @@ where
         })
     }
 
+    pub fn get_partition_buf<PT, PA>(&self, idx: u32, buf: &[u8]) -> Result<GPTPartHeader<PT, PA>>
+    where
+        PT: GPTTypeGuid,
+        GPTError: From<<PT as TryFrom<[u8; 16]>>::Error>,
+        GPTError: From<<PT as TryInto<[u8; 16]>>::Error>,
+        PA: TryFrom<u64>,
+        GPTError: From<<PA as TryFrom<u64>>::Error>,
+    {
+        if idx >= self.header.num_parts {
+            return Err(GPTError::InvalidData);
+        }
+
+        // TODO: check size
+        let offset: u64 = self.header.size_of_p_entry as u64 * idx as u64;
+
+        GPTPartHeader::parse(&buf[offset as usize..])
+    }
+
     pub fn get_partition<PT, PA>(&self, idx: u32) -> Result<GPTPartHeader<PT, PA>>
     where
         PT: GPTTypeGuid,
@@ -153,43 +171,83 @@ where
         GPTError: From<<PA as TryFrom<u64>>::Error>,
     {
         if idx >= self.header.num_parts {
-            return Err(GPTError::NoGPT);
+            return Err(GPTError::InvalidData);
         }
 
-        #[cfg(not(feature = "alloc"))]
-        let mut buf = [0u8; DEFAULT_PARTTABLE_SIZE as usize];
+        let p_table_size = self.header.size_of_p_entry as usize * self.header.num_parts as usize;
 
-        #[cfg(feature = "alloc")]
-        let mut buf = {
-            let mut buf = Vec::with_capacity(DEFAULT_PARTTABLE_SIZE as usize);
-            buf.try_reserve_exact(DEFAULT_PARTTABLE_SIZE as usize)?; // Catch allocation errors
-            buf.resize(DEFAULT_PARTTABLE_SIZE as usize, 0);
-            buf
-        };
-
-        let p_table_size = self.header.size_of_p_entry * self.header.num_parts;
-        #[cfg(not(feature = "alloc"))]
-        if p_table_size > DEFAULT_PARTTABLE_SIZE {
-            return Err(GPTError::NoAllocator.into());
-        }
-
-        #[cfg(feature = "alloc")]
-        if p_table_size > buf.len() as u32 {
-            buf.try_reserve_exact(p_table_size as usize - buf.len())?; // Catch allocation errors
-            buf.resize(p_table_size as usize, 0);
-        }
-
-        let blocks = if p_table_size > DEFAULT_PARTTABLE_SIZE as u32 {
-            p_table_size / BLOCK_SIZE + 1 // TODO: round up properly
+        let blocks = if p_table_size > DEFAULT_PARTTABLE_SIZE as usize {
+            (p_table_size / BLOCK_SIZE as usize + 1) as usize // TODO: round up properly
         } else {
-            DEFAULT_PARTTABLE_BLOCKS
+            DEFAULT_PARTTABLE_BLOCKS as usize
         };
 
-        self.block
-            .read(&mut buf, self.header.p_entry_lba as usize, blocks as usize)?;
+        let buf = read_buf(
+            self.header.p_entry_lba as usize,
+            p_table_size,
+            &self.block,
+            blocks,
+        )?;
 
-        let offset: u64 = self.header.size_of_p_entry as u64 * idx as u64;
-
-        GPTPartHeader::parse(&buf[offset as usize..])
+        self.get_partition_buf(idx, &buf)
     }
+
+    pub fn get_first_partition_of_type<PT, PA>(&self, guid: PT) -> Result<GPTPartHeader<PT, PA>>
+    where
+        PT: GPTTypeGuid,
+        GPTError: From<<PT as TryFrom<[u8; 16]>>::Error>,
+        GPTError: From<<PT as TryInto<[u8; 16]>>::Error>,
+        PA: TryFrom<u64>,
+        GPTError: From<<PA as TryFrom<u64>>::Error>,
+        PT: Eq,
+    {
+        todo!()
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+fn read_buf<T: BlockDevice>(
+    start_lba: usize,
+    size: usize,
+    block: &T,
+    blocks: usize,
+) -> Result<[u8; DEFAULT_PARTTABLE_SIZE as usize]>
+where
+    GPTError: From<T::Error>,
+{
+    let mut buf = [0u8; DEFAULT_PARTTABLE_SIZE as usize];
+    if size > DEFAULT_PARTTABLE_SIZE as usize {
+        return Err(GPTError::NoAllocator);
+    }
+
+    block.read(&mut buf, start_lba, blocks)?;
+
+    Ok(buf)
+}
+
+#[cfg(feature = "alloc")]
+fn read_buf<T: BlockDevice>(
+    start_lba: usize,
+    size: usize,
+    block: &T,
+    blocks: usize,
+) -> Result<alloc::vec::Vec<u8>>
+where
+    GPTError: From<T::Error>,
+{
+    let mut buf = {
+        let mut buf = Vec::with_capacity(DEFAULT_PARTTABLE_SIZE as usize);
+        buf.try_reserve_exact(DEFAULT_PARTTABLE_SIZE as usize)?; // Catch allocation errors
+        buf.resize(DEFAULT_PARTTABLE_SIZE as usize, 0);
+        buf
+    };
+
+    if size > buf.len() {
+        buf.try_reserve_exact(size - buf.len())?; // Catch allocation errors
+        buf.resize(size, 0);
+    }
+
+    block.read(&mut buf, start_lba, blocks)?;
+
+    Ok(buf)
 }

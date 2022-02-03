@@ -125,7 +125,7 @@ pub trait GPTTypeGuid: TryFrom<[u8; 16]> + TryInto<[u8; 16]> {
 
 // TODO: somehow pack to same size as GUID
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum DefaultGPTTypeGuid {
     /// Unused Entry.
     Unused,
@@ -136,32 +136,86 @@ pub enum DefaultGPTTypeGuid {
     Unknown(GUID),
 }
 
-impl TryFrom<[u8; 16]> for DefaultGPTTypeGuid {
-    type Error = Infallible;
-
-    fn try_from(value: [u8; 16]) -> core::result::Result<Self, Self::Error> {
+impl From<[u8; 16]> for DefaultGPTTypeGuid {
+    fn from(value: [u8; 16]) -> Self {
         let value = GUID::from(value);
-        Ok(match value {
+        value.into()
+    }
+}
+
+impl Into<[u8; 16]> for DefaultGPTTypeGuid {
+    fn into(self) -> [u8; 16] {
+        let guid: GUID = self.into();
+        guid.into()
+    }
+}
+
+impl Into<GUID> for DefaultGPTTypeGuid {
+    fn into(self) -> GUID {
+        match self {
+            DefaultGPTTypeGuid::Unused => GUID::UNUSED,
+            DefaultGPTTypeGuid::ESP => GUID::ESP,
+            DefaultGPTTypeGuid::LegacyMBR => GUID::LEGACY_MBR,
+            DefaultGPTTypeGuid::Unknown(v) => v,
+        }
+    }
+}
+
+impl From<GUID> for DefaultGPTTypeGuid {
+    fn from(value: GUID) -> Self {
+        match value {
             GUID::UNUSED => DefaultGPTTypeGuid::Unused,
             GUID::ESP => DefaultGPTTypeGuid::ESP,
             GUID::LEGACY_MBR => DefaultGPTTypeGuid::LegacyMBR,
             v => DefaultGPTTypeGuid::Unknown(v),
-        })
-    }
-}
-
-impl TryInto<[u8; 16]> for DefaultGPTTypeGuid {
-    type Error = GPTError;
-
-    fn try_into(self) -> core::result::Result<[u8; 16], Self::Error> {
-        Ok(match self {
-            DefaultGPTTypeGuid::Unused => GUID::ESP.into(),
-            DefaultGPTTypeGuid::ESP => GUID::ESP.into(),
-            DefaultGPTTypeGuid::LegacyMBR => GUID::LEGACY_MBR.into(),
-            DefaultGPTTypeGuid::Unknown(v) => v.into(),
-        })
+        }
     }
 }
 
 impl GPTTypeGuid for DefaultGPTTypeGuid {}
 impl GPTTypeGuid for GUID {}
+
+#[cfg(test)]
+mod test {
+    use crate::{DefaultGPTTypeGuid, GUID};
+
+    #[test]
+    fn eq_guid_default_partition_type() {
+        let lhs = DefaultGPTTypeGuid::ESP;
+        let rhs: DefaultGPTTypeGuid = GUID::ESP.into();
+
+        assert_eq!(lhs, rhs);
+    }
+
+    #[test]
+    fn guid_default_partition_type_into_guid() {
+        let lhs: GUID = DefaultGPTTypeGuid::Unused.into();
+        assert_eq!(lhs, GUID::UNUSED);
+
+        let lhs: GUID = DefaultGPTTypeGuid::ESP.into();
+        assert_eq!(lhs, GUID::ESP);
+
+        let lhs: GUID = DefaultGPTTypeGuid::LegacyMBR.into();
+        assert_eq!(lhs, GUID::LEGACY_MBR);
+
+        let guid: GUID = "6FCC8240-3985-4840-901F-A05E7FD9B69D".parse().unwrap();
+        let lhs: GUID = DefaultGPTTypeGuid::Unknown(guid).into();
+        assert_eq!(lhs, guid);
+    }
+
+    #[test]
+    fn guid_default_partition_type_from_guid() {
+        let lhs: DefaultGPTTypeGuid = GUID::UNUSED.into();
+        assert_eq!(lhs, DefaultGPTTypeGuid::Unused);
+
+        let lhs: DefaultGPTTypeGuid = GUID::ESP.into();
+        assert_eq!(lhs, DefaultGPTTypeGuid::ESP);
+
+        let lhs: DefaultGPTTypeGuid = GUID::LEGACY_MBR.into();
+        assert_eq!(lhs, DefaultGPTTypeGuid::LegacyMBR);
+
+        let guid: GUID = "6FCC8240-3985-4840-901F-A05E7FD9B69D".parse().unwrap();
+        let lhs: DefaultGPTTypeGuid = guid.into();
+        assert_eq!(lhs, DefaultGPTTypeGuid::Unknown(guid));
+    }
+}
