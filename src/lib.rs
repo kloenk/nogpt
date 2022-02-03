@@ -29,19 +29,22 @@ macro_rules! read_le_bytes {
         ($in[$pos]).try_into().unwrap()
     };
 }
-use crate::error::ParseGuidError;
-use crate::part::{DefaultGPTTypeGuid, GPTPartHeader, GPTTypeGuid};
 pub(crate) use read_le_bytes; // trick to export to crate
 
-pub mod error;
 mod guid;
+
+pub mod error;
 pub mod header;
 pub mod mbr;
 pub mod part;
 #[cfg(any(feature = "std", test, doc))]
 pub mod std;
 
+use crate::error::ParseGuidError;
 use crate::mbr::{MBRPartitionRecord, MasterBootRecord};
+use crate::part::{DefaultGPTTypeGuid, GPTPartHeader, GPTTypeGuid};
+
+#[doc(inline)]
 pub use guid::GUID;
 
 pub struct GPT<T> {
@@ -192,6 +195,31 @@ where
         self.get_partition_buf(idx, &buf)
     }
 
+    pub fn get_first_partition_of_type_buf<PT, PA>(
+        &self,
+        guid: PT,
+        buf: &[u8],
+    ) -> Result<GPTPartHeader<PT, PA>>
+    where
+        PT: GPTTypeGuid,
+        GPTError: From<<PT as TryFrom<[u8; 16]>>::Error>,
+        GPTError: From<<PT as TryInto<[u8; 16]>>::Error>,
+        PA: TryFrom<u64>,
+        GPTError: From<<PA as TryFrom<u64>>::Error>,
+        PT: Eq,
+    {
+        let mut idx = 0;
+
+        loop {
+            let part = self.get_partition_buf(idx, buf)?;
+            if part.type_guid == guid {
+                return Ok(part);
+            }
+
+            idx += 1;
+        }
+    }
+
     pub fn get_first_partition_of_type<PT, PA>(&self, guid: PT) -> Result<GPTPartHeader<PT, PA>>
     where
         PT: GPTTypeGuid,
@@ -201,7 +229,22 @@ where
         GPTError: From<<PA as TryFrom<u64>>::Error>,
         PT: Eq,
     {
-        todo!()
+        let p_table_size = self.header.size_of_p_entry as usize * self.header.num_parts as usize;
+
+        let blocks = if p_table_size > DEFAULT_PARTTABLE_SIZE as usize {
+            (p_table_size / BLOCK_SIZE as usize + 1) as usize // TODO: round up properly
+        } else {
+            DEFAULT_PARTTABLE_BLOCKS as usize
+        };
+
+        let buf = read_buf(
+            self.header.p_entry_lba as usize,
+            p_table_size,
+            &self.block,
+            blocks,
+        )?;
+
+        self.get_first_partition_of_type_buf(guid, &buf)
     }
 }
 

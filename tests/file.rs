@@ -1,6 +1,6 @@
 use block_device::BlockDevice;
 use nogpt::mbr::MasterBootRecord;
-use nogpt::part::GPTPartHeader;
+use nogpt::part::{DefaultGPTTypeGuid, GPTPartHeader};
 use nogpt::{GPTError, GptRepair};
 
 #[cfg(feature = "std")]
@@ -16,6 +16,24 @@ fn file() -> Result<(), GPTError> {
     let part: GPTPartHeader = gpt.get_partition(0)?;
 
     println!("part[0]: {:?}", part);
+
+    Ok(())
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn find_linux() -> Result<(), GPTError> {
+    let block = open_512_file()?;
+
+    let gpt = nogpt::GPT::open(block).fail()?;
+
+    let type_guid: nogpt::GUID = "0FC63DAF-8483-4772-8E79-3D69D8477DE4".parse().unwrap();
+    let guid: nogpt::GUID = "6FCC8240-3985-4840-901F-A05E7FD9B69D".parse().unwrap();
+    let part: GPTPartHeader =
+        gpt.get_first_partition_of_type(DefaultGPTTypeGuid::Unknown(type_guid))?;
+
+    assert_eq!(part.type_guid, DefaultGPTTypeGuid::Unknown(type_guid));
+    assert_eq!(part.guid, guid);
 
     Ok(())
 }
