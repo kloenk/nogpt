@@ -37,6 +37,9 @@ pub enum GPTError {
     #[error(display = "Invalid data")]
     InvalidData,
 
+    #[error(display = "Failed to read data")]
+    ReadError,
+
     #[error(display = "Data not long enough")]
     UnexpectedEOF,
 
