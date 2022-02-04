@@ -142,6 +142,10 @@ where
         })
     }
 
+    pub fn get_block(self) -> T {
+        self.block
+    }
+
     pub fn get_partition_buf<PT, PA>(&self, idx: u32, buf: &[u8]) -> Result<GPTPartHeader<PT, PA>>
     where
         PT: GPTTypeGuid,
