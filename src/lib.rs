@@ -14,10 +14,8 @@ use block_device::BlockDevice;
 pub use crate::error::{GPTError, GPTParseError, GptRepair, Result};
 use crate::header::{GPTHeader, GptHeaderType};
 
-pub const BLOCK_SIZE: u32 = 512;
-//pub const BLOCK_SIZE: u32 = 4096;
 pub const DEFAULT_PARTTABLE_SIZE: u32 = 16384;
-pub const DEFAULT_PARTTABLE_BLOCKS: u32 = DEFAULT_PARTTABLE_SIZE / BLOCK_SIZE;
+//pub const DEFAULT_PARTTABLE_BLOCKS: u32 = DEFAULT_PARTTABLE_SIZE / BLOCK_SIZE;
 
 macro_rules! read_le_bytes {
     ($in:tt, $size:tt, $pos:expr) => {
@@ -101,11 +99,7 @@ where
             buf.resize(p_table_size as usize, 0);
         }
 
-        let blocks = if p_table_size > DEFAULT_PARTTABLE_SIZE as u32 {
-            p_table_size / BLOCK_SIZE + 1 // TODO: round up properly
-        } else {
-            DEFAULT_PARTTABLE_BLOCKS
-        };
+        let blocks = ceil64(p_table_size as u64, T::BLOCK_SIZE as u64) as usize;
 
         block.read(&mut buf, m_header.p_entry_lba as usize, blocks as usize)?;
 
@@ -180,11 +174,7 @@ where
 
         let p_table_size = self.header.size_of_p_entry as usize * self.header.num_parts as usize;
 
-        let blocks = if p_table_size > DEFAULT_PARTTABLE_SIZE as usize {
-            (p_table_size / BLOCK_SIZE as usize + 1) as usize // TODO: round up properly
-        } else {
-            DEFAULT_PARTTABLE_BLOCKS as usize
-        };
+        let blocks = ceil64(p_table_size as u64, T::BLOCK_SIZE as u64) as usize;
 
         let buf = read_buf(
             self.header.p_entry_lba as usize,
@@ -232,11 +222,7 @@ where
     {
         let p_table_size = self.header.size_of_p_entry as usize * self.header.num_parts as usize;
 
-        let blocks = if p_table_size > DEFAULT_PARTTABLE_SIZE as usize {
-            (p_table_size / BLOCK_SIZE as usize + 1) as usize // TODO: round up properly
-        } else {
-            DEFAULT_PARTTABLE_BLOCKS as usize
-        };
+        let blocks = ceil64(p_table_size as u64, T::BLOCK_SIZE as u64) as usize;
 
         let buf = read_buf(
             self.header.p_entry_lba as usize,
@@ -294,4 +280,14 @@ where
     block.read(&mut buf, start_lba, blocks)?;
 
     Ok(buf)
+}
+
+/*fn ceil32(mut a: u32, b: u32) -> u32 {
+    a += b - (a % b);
+    a / b
+}*/
+
+fn ceil64(mut a: u64, b: u64) -> u64 {
+    a += b - (a % b);
+    a / b
 }

@@ -1,4 +1,3 @@
-use crate::BLOCK_SIZE;
 use std::fs::File;
 use std::io::Error;
 use std::path::Path;
@@ -10,11 +9,11 @@ use std::os::windows::fs::FileExt;
 use std::os::unix::fs::FileExt;
 
 use block_device::BlockDevice;
-pub struct BlockFile {
+pub struct BlockFile<const N: u32> {
     inner: std::fs::File,
 }
 
-impl BlockFile {
+impl<const N: u32> BlockFile<N> {
     pub fn open<P: AsRef<Path>>(path: &P) -> Result<Self, Error> {
         std::fs::OpenOptions::new()
             .write(true)
@@ -24,7 +23,8 @@ impl BlockFile {
     }
 }
 
-impl BlockDevice for BlockFile {
+impl<const N: u32> BlockDevice for BlockFile<N> {
+    const BLOCK_SIZE: u32 = N;
     type Error = Error;
 
     fn read(
@@ -35,10 +35,12 @@ impl BlockDevice for BlockFile {
     ) -> Result<(), Self::Error> {
         #[cfg(target_family = "unix")]
         self.inner
-            .read_at(buf, BLOCK_SIZE as u64 * address as u64)?;
+            .read_at(buf, Self::BLOCK_SIZE as u64 * address as u64)?;
 
         #[cfg(target_family = "windows")]
-        let read = self.inner.seek_read(buf, BLOCK_SIZE * address as u64)?;
+        let read = self
+            .inner
+            .seek_read(buf, Self::BLOCK_SIZE * address as u64)?;
 
         /*if read != number_of_blocks {
             return Err(Error::from(ErrorKind::UnexpectedEof));
@@ -55,10 +57,12 @@ impl BlockDevice for BlockFile {
     ) -> Result<(), Self::Error> {
         #[cfg(target_family = "unix")]
         self.inner
-            .write_at(buf, BLOCK_SIZE as u64 * address as u64)?;
+            .write_at(buf, Self::BLOCK_SIZE as u64 * address as u64)?;
 
         #[cfg(target_family = "windows")]
-        let write = self.inner.seek_write(buf, BLOCK_SIZE * address as u64)?;
+        let write = self
+            .inner
+            .seek_write(buf, Self::BLOCK_SIZE * address as u64)?;
 
         /*if write != number_of_blocks {
             return Err(Error::from(ErrorKind::UnexpectedEof));
@@ -68,7 +72,7 @@ impl BlockDevice for BlockFile {
     }
 }
 
-impl From<File> for BlockFile {
+impl<const N: u32> From<File> for BlockFile<N> {
     fn from(f: File) -> Self {
         Self { inner: f }
     }

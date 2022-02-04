@@ -69,7 +69,7 @@ fn read_mbr() -> Result<(), GPTError> {
 }
 
 #[cfg(feature = "std")]
-fn open_512_file() -> Result<BlockFile, GPTError> {
+fn open_512_file() -> Result<BlockFile<512>, GPTError> {
     Ok(nogpt::std::BlockFile::open(
         &"tests/fixtures/gpt-linux-disk-01.img",
     )?)
